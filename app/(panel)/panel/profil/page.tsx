@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,10 +30,21 @@ async function changePassword(form: { currentPassword: string; newPassword: stri
   return data;
 }
 
+function roleLabel(role?: string) {
+  const r = role?.toUpperCase();
+  if (r === "ADMIN") return "Admin";
+  return "Kullanıcı";
+}
+
 export default function ProfilPage() {
   const { data: session, update } = useSession();
 
-  const [name, setName] = useState(session?.user?.name ?? "");
+  const [name, setName] = useState("");
+
+  // Sync name from session once loaded (useSession resolves async)
+  useEffect(() => {
+    if (session?.user?.name) setName(session.user.name);
+  }, [session?.user?.name]);
 
   const nameMutation = useMutation({
     mutationFn: updateName,
@@ -83,8 +94,8 @@ export default function ProfilPage() {
           </div>
           <div className="space-y-1.5">
             <Label>Rol</Label>
-            <p className="px-4 py-2.5 rounded-xl bg-bg-elevated border border-border text-text-secondary text-sm capitalize">
-              {(session?.user as { role?: string })?.role?.toLowerCase() ?? "kullanıcı"}
+            <p className="px-4 py-2.5 rounded-xl bg-bg-elevated border border-border text-text-secondary text-sm">
+              {roleLabel((session?.user as { role?: string })?.role)}
             </p>
           </div>
         </CardContent>

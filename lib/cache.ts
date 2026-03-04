@@ -35,5 +35,7 @@ class MemoryCache {
 // Singleton — shared across requests in a single Node.js process.
 // NOTE: for multi-instance Vercel/Netlify deployments use Upstash Redis.
 const globalForCache = global as unknown as { memCache: MemoryCache };
-export const cache = globalForCache.memCache || new MemoryCache();
-if (process.env.NODE_ENV !== "production") globalForCache.memCache = cache;
+export const cache = globalForCache.memCache ?? new MemoryCache();
+// Persist singleton on global in all environments (not just dev) to survive
+// hot-module replacement in dev AND to ensure a single instance in production.
+globalForCache.memCache = cache;

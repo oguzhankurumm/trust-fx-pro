@@ -56,13 +56,14 @@ model User {
   updatedAt     DateTime   @updatedAt
 
   // Relations
-  profile       Profile?
-  ledgerEntries LedgerEntry[]
-  adminActions  AdminAudit[]  @relation("AdminActions")
-  targetAudits  AdminAudit[]  @relation("TargetUser")
+  profile        Profile?
+  ledgerEntries  LedgerEntry[]
+  adminActions   AdminAudit[]   @relation("AdminActions")
+  targetAudits   AdminAudit[]   @relation("TargetUser")
+  bankAccounts   BankAccount[]  @relation("AdminBankAccounts")
   // NextAuth adapter relations
-  accounts      Account[]
-  sessions      Session[]
+  accounts       Account[]
+  sessions       Session[]
 
   @@map("users")
 }
@@ -113,6 +114,25 @@ model AdminAudit {
   @@index([adminId])
   @@index([targetUserId])
   @@map("admin_audits")
+}
+
+// ─── Bank Account Model ───────────────────────────────────────────────────────
+
+/// Admin-managed bank accounts displayed to users during deposit (havale/EFT/FAST)
+model BankAccount {
+  id            String   @id @default(cuid())
+  bankName      String
+  iban          String   @unique
+  accountHolder String
+  swiftCode     String?
+  isActive      Boolean  @default(true)
+  adminId       String
+  admin         User     @relation("AdminBankAccounts", fields: [adminId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("bank_accounts")
 }
 
 // ─── NextAuth Prisma Adapter Models ──────────────────────────────────────────

@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatCurrency } from "@/lib/utils";
 import { qk, fetchAdminUser } from "@/lib/queries";
 import type { LedgerRow, BalanceRow } from "@/lib/queries";
 
@@ -124,7 +124,7 @@ export default function KullaniciDetayPage() {
               <div key={b.currency}>
                 <p className="text-text-muted">{b.currency} Bakiye</p>
                 <p className="text-text-primary font-numeric font-semibold">
-                  {Number(b._sum.amount ?? 0).toFixed(2)} {b.currency}
+                  {formatCurrency(Number(b._sum.amount ?? 0), b.currency as "TRY" | "USDT")}
                 </p>
               </div>
             ))}

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,7 +39,10 @@ export default function GirisPage() {
         toast({ title: "Giriş başarısız", description: "E-posta veya şifrenizi kontrol edin.", variant: "error" });
       } else {
         toast({ title: "Hoş geldiniz!", variant: "success" });
-        router.push(callbackUrl);
+        const session = await getSession();
+        const role = (session?.user as { role?: string })?.role?.toUpperCase();
+        const destination = role === "ADMIN" ? "/admin" : callbackUrl;
+        router.push(destination);
         router.refresh();
       }
     } catch {

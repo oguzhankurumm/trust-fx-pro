@@ -37,7 +37,26 @@ export const updateTransactionSchema = z.object({
   reason: z.string().max(500).optional(),
 });
 
+// TR IBAN: TR + 2 check digits + 24 digits = 26 chars total
+const TR_IBAN_REGEX = /^TR\d{24}$/;
+
+export const bankAccountSchema = z.object({
+  bankName: z.string().min(3, "Banka adı en az 3 karakter olmalıdır").max(100),
+  iban: z
+    .string()
+    .regex(TR_IBAN_REGEX, "Geçerli bir Türkiye IBAN numarası giriniz (TR ile başlayan 26 karakter)"),
+  accountHolder: z.string().min(3, "Hesap sahibi adı en az 3 karakter olmalıdır").max(150),
+  swiftCode: z.string().max(11).optional().or(z.literal("")),
+  isActive: z.boolean().optional().default(true),
+});
+
+export const updateBankAccountSchema = bankAccountSchema.partial().extend({
+  isActive: z.boolean().optional(),
+});
+
 export type DepositInput = z.infer<typeof depositSchema>;
 export type WithdrawInput = z.infer<typeof withdrawSchema>;
 export type AdminBalanceInput = z.infer<typeof adminBalanceSchema>;
 export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>;
+export type BankAccountInput = z.infer<typeof bankAccountSchema>;
+export type UpdateBankAccountInput = z.infer<typeof updateBankAccountSchema>;

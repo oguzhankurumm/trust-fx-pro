@@ -29,8 +29,9 @@ async function cgFetch<T>(path: string, params?: Record<string, string>): Promis
 
   const res = await fetch(url.toString(), {
     headers,
-    // Next.js fetch cache — revalidate every 60s
-    next: { revalidate: 60 },
+    // Let server-side MemoryCache in lib/cache.ts handle caching;
+    // avoid conflicting with Next.js Data Cache in API routes.
+    cache: "no-store",
   });
 
   if (!res.ok) {

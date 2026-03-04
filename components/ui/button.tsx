@@ -16,6 +16,8 @@ const buttonVariants = cva(
           "bg-danger/10 border border-danger/40 text-danger hover:bg-danger/20",
         success:
           "bg-success/10 border border-success/40 text-success hover:bg-success/20",
+        brand:
+          "bg-brand text-bg-base hover:bg-brand-dim shadow-lg shadow-brand/20 active:scale-[0.98]",
         ghost:
           "text-text-secondary hover:text-text-primary hover:bg-bg-hover",
         link:

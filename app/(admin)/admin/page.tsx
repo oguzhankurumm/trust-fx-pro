@@ -49,6 +49,9 @@ export default async function AdminPage() {
     REJECT_TRANSACTION: "İşlem Reddi",
     BLOCK_USER: "Kullanıcı Engellendi",
     UNBLOCK_USER: "Engel Kaldırıldı",
+    BANK_ACCOUNT_CREATE: "Banka Hesabı Oluşturuldu",
+    BANK_ACCOUNT_UPDATE: "Banka Hesabı Güncellendi",
+    BANK_ACCOUNT_DELETE: "Banka Hesabı Silindi",
   };
 
   return (

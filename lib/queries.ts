@@ -13,6 +13,8 @@ export const qk = {
   adminUsers: (page: number, search: string) =>
     ["admin", "users", page, search] as const,
   adminUser: (id: string) => ["admin", "user", id] as const,
+  adminTransactions: (params: AdminTransactionParams) =>
+    ["admin", "transactions", params] as const,
   panelTransactions: (page: number) => ["panel", "transactions", page] as const,
 };
 
@@ -56,6 +58,34 @@ export async function fetchPanelTransactions(page: number) {
   return res.json();
 }
 
+export type AdminTransactionParams = {
+  page?: number;
+  type?: string;
+  status?: string;
+  currency?: string;
+  q?: string;
+};
+
+export async function fetchAdminTransactions(params: AdminTransactionParams) {
+  const p = new URLSearchParams();
+  if (params.page) p.set("page", String(params.page));
+  if (params.type) p.set("type", params.type);
+  if (params.status) p.set("status", params.status);
+  if (params.currency) p.set("currency", params.currency);
+  if (params.q) p.set("q", params.q);
+  const res = await fetch(`/api/admin/transactions?${p}`);
+  if (!res.ok) throw new Error("İşlemler yüklenemedi");
+  return res.json() as Promise<{
+    success: boolean;
+    data: {
+      transactions: AdminTransactionRow[];
+      total: number;
+      page: number;
+      pageSize: number;
+    };
+  }>;
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type AdminUserRow = {
@@ -91,4 +121,15 @@ export type LedgerRow = {
 export type BalanceRow = {
   currency: string;
   _sum: { amount: string | null };
+};
+
+export type AdminTransactionRow = {
+  id: string;
+  type: string;
+  amount: string;
+  currency: string;
+  status: string;
+  createdAt: string;
+  metadata?: Record<string, unknown> | null;
+  user: { id: string; email: string; name: string | null };
 };
