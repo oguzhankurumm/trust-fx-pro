@@ -104,7 +104,7 @@ export default async function CoinDetailPage({ params }: Props) {
           {/* Coin header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-3">
-              <CoinIcon src={coin.image.large} alt={coin.name} size={44} />
+              <CoinIcon src={coin.image.large} symbol={coin.symbol} alt={coin.name} size={44} />
               <div>
                 <h1 className="text-xl font-extrabold text-white">{coin.symbol.toUpperCase()}</h1>
                 <p className="text-xs text-text-muted">{coin.symbol.toUpperCase()}</p>

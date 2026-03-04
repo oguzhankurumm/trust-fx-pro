@@ -145,7 +145,7 @@ export default function HomePage() {
                     const chg = c.price_change_percentage_24h ?? 0;
                     return (
                       <tr key={c.id} className="hover:bg-bg-elevated transition-colors">
-                        <td className="px-4 py-3"><CoinIcon src={c.image} alt={c.name} size={24} className="h-6 w-6" /></td>
+                        <td className="px-4 py-3"><CoinIcon src={c.image} symbol={c.symbol} alt={c.name} size={24} className="h-6 w-6" /></td>
                         <td className="px-4 py-3"><div className="font-semibold text-white">{c.symbol.toUpperCase()}</div><div className="text-xs text-text-muted">{c.name}</div></td>
                         <td className="px-4 py-3 text-right font-mono">₺{fmtPrice(c.current_price)}</td>
                         <td className="px-4 py-3 text-right font-mono text-text-muted">₺{fmtPrice(c.current_price * 0.999)}</td>
@@ -253,7 +253,7 @@ export default function HomePage() {
                   <tbody className="divide-y divide-border">
                     {coins.map((c) => { const chg = c.price_change_percentage_24h ?? 0; return (
                       <tr key={c.id} className="hover:bg-bg-surface transition-colors">
-                        <td className="px-4 py-3"><CoinIcon src={c.image} alt={c.name} size={24} className="h-6 w-6" /></td>
+                        <td className="px-4 py-3"><CoinIcon src={c.image} symbol={c.symbol} alt={c.name} size={24} className="h-6 w-6" /></td>
                         <td className="px-4 py-3"><span className="font-semibold text-white">{c.symbol.toUpperCase()}</span><span className="ml-2 text-xs text-text-muted">{c.name}</span></td>
                         <td className="px-4 py-3 text-right font-mono text-white">₺{fmtPrice(c.current_price)}</td>
                         <td className="px-4 py-3 text-right font-mono text-text-muted">₺{fmtPrice(c.current_price * 0.999)}</td>

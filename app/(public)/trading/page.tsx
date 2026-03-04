@@ -10,6 +10,7 @@ import {
   Clock, CheckCircle, XCircle, Lock,
 } from "lucide-react";
 import Link from "next/link";
+import { CoinIcon } from "@/components/ui/coin-icon";
 import type { TickerData } from "@/app/api/crypto/ticker/route";
 
 interface Coin {
@@ -355,9 +356,7 @@ export default function TradingPage() {
                   : "border-border bg-bg-surface text-text-secondary hover:border-brand/30 hover:text-text-primary"
               }`}
             >
-              <span className={`h-5 w-5 flex items-center justify-center rounded-full text-[10px] font-bold ${active ? "bg-white/20" : "bg-bg-elevated"}`}>
-                {coin.symbol[0]}
-              </span>
+              <CoinIcon symbol={coin.symbol} size={20} />
               {coin.symbol}
               {pct !== null && !isLoading && (
                 <span className={`text-[10px] font-semibold ${pct >= 0 ? "text-success" : "text-danger"}`}>
@@ -376,9 +375,7 @@ export default function TradingPage() {
           {/* Coin Header */}
           <div className="rounded-xl border border-border bg-bg-surface p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 flex items-center justify-center rounded-full bg-brand/10 border border-brand/20 text-xs font-bold text-brand">
-                {selectedCoin.symbol[0]}
-              </div>
+              <CoinIcon symbol={selectedCoin.symbol} size={32} />
               <div>
                 <p className="font-bold text-white">{selectedCoin.symbol} / TRY</p>
                 <p className="text-xs text-text-muted">
@@ -736,9 +733,7 @@ export default function TradingPage() {
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="h-5 w-5 flex items-center justify-center rounded-full bg-bg-elevated text-[9px] font-bold text-brand">
-                        {coin.symbol[0]}
-                      </span>
+                      <CoinIcon symbol={coin.symbol} size={20} />
                       <span className="font-medium text-white">{coin.symbol}</span>
                     </div>
                     <div className="text-right">

@@ -178,7 +178,7 @@ export function MarketPageClient() {
                     <tr key={coin.id} className="hover:bg-bg-elevated transition-colors cursor-pointer">
                       <td className="py-3 px-4">
                         <Link href={`/piyasa/${coin.id}`} className="flex items-center gap-3">
-                          <CoinIcon src={coin.image} alt={coin.name} size={28} />
+                          <CoinIcon src={coin.image} symbol={coin.symbol} alt={coin.name} size={28} />
                           <div>
                             <p className="font-semibold text-white">{coin.symbol.toUpperCase()}</p>
                             <p className="text-xs text-text-muted">{coin.name}</p>
