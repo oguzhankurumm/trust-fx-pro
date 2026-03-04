@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import { CoinIcon } from "@/components/ui/coin-icon";
 import { Search, SlidersHorizontal, ArrowUpDown, RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { qk, fetchMarkets } from "@/lib/queries";
@@ -178,9 +178,7 @@ export function MarketPageClient() {
                     <tr key={coin.id} className="hover:bg-bg-elevated transition-colors cursor-pointer">
                       <td className="py-3 px-4">
                         <Link href={`/piyasa/${coin.id}`} className="flex items-center gap-3">
-                          {coin.image && (
-                            <Image src={coin.image} alt={coin.name} width={28} height={28} className="rounded-full shrink-0" />
-                          )}
+                          <CoinIcon src={coin.image} alt={coin.name} size={28} />
                           <div>
                             <p className="font-semibold text-white">{coin.symbol.toUpperCase()}</p>
                             <p className="text-xs text-text-muted">{coin.name}</p>

@@ -28,6 +28,7 @@ const TYPE_LABELS: Record<string, string> = {
   DEPOSIT: "Yatırım",
   WITHDRAWAL: "Çekim",
   ADJUSTMENT: "Düzenleme",
+  TRADE: "Trading",
 };
 
 const STATUS_LABELS: Record<string, string> = {

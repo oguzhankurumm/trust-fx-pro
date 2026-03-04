@@ -1,3 +1,5 @@
+import { cache as reactCache } from "react";
+import { cache as memCache } from "@/lib/cache";
 import type { CryptoProvider } from "./provider";
 import type { CoinMarket, CoinDetail, ChartData } from "@/types";
 
@@ -60,13 +62,20 @@ export class CoinGeckoProvider implements CryptoProvider {
   }
 
   async getCoin(id: string): Promise<CoinDetail> {
-    return cgFetch<CoinDetail>(`/coins/${encodeURIComponent(id)}`, {
-      localization: "true",
+    const cacheKey = `coin:${id}`;
+    const cached = memCache.get<CoinDetail>(cacheKey);
+    if (cached) return cached;
+
+    const data = await cgFetch<CoinDetail>(`/coins/${encodeURIComponent(id)}`, {
+      localization: "false",
       tickers: "false",
       market_data: "true",
       community_data: "false",
       developer_data: "false",
     });
+
+    memCache.set(cacheKey, data, 60);
+    return data;
   }
 
   async getChart(id: string, currency = "usd", days = 7): Promise<ChartData> {
@@ -79,3 +88,11 @@ export class CoinGeckoProvider implements CryptoProvider {
 
 // Singleton provider — swap implementation by changing this export
 export const cryptoProvider: CryptoProvider = new CoinGeckoProvider();
+
+/**
+ * Per-request deduplicated coin fetcher.
+ * React.cache ensures generateMetadata + the page component share one call.
+ */
+export const getCoinCached = reactCache((id: string) =>
+  cryptoProvider.getCoin(id)
+);

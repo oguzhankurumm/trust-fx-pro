@@ -1,9 +1,9 @@
 import React from "react";
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
+import { CoinIcon } from "@/components/ui/coin-icon";
 import { ArrowLeft, AlertCircle, RefreshCw } from "lucide-react";
-import { cryptoProvider } from "@/lib/crypto/coingecko";
+import { getCoinCached } from "@/lib/crypto/coingecko";
 import { auth } from "@/lib/auth";
 
 interface Props {
@@ -13,7 +13,7 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { coinId } = await params;
   try {
-    const coin = await cryptoProvider.getCoin(coinId);
+    const coin = await getCoinCached(coinId);
     return {
       title: `${coin.name} (${coin.symbol.toUpperCase()}) - Coin Detayları`,
       description: `${coin.name} anlık fiyat, grafik ve piyasa verileri.`,
@@ -47,11 +47,19 @@ function tvSymbol(coinId: string, symbol: string): string {
 
 export default async function CoinDetailPage({ params }: Props) {
   const { coinId } = await params;
-  const session = await auth();
+
+  // Run auth check and coin fetch in parallel
+  const [session, coinResult] = await Promise.allSettled([
+    auth(),
+    getCoinCached(coinId),
+  ]);
+
+  const sessionData = session.status === "fulfilled" ? session.value : null;
 
   let coin;
   try {
-    coin = await cryptoProvider.getCoin(coinId);
+    if (coinResult.status === "rejected") throw coinResult.reason;
+    coin = coinResult.value;
   } catch {
     return (
       <div className="mx-auto max-w-7xl px-4 py-16 text-center">
@@ -96,13 +104,7 @@ export default async function CoinDetailPage({ params }: Props) {
           {/* Coin header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-3">
-              <Image
-                src={coin.image.large}
-                alt={coin.name}
-                width={44}
-                height={44}
-                className="rounded-full shrink-0"
-              />
+              <CoinIcon src={coin.image.large} alt={coin.name} size={44} />
               <div>
                 <h1 className="text-xl font-extrabold text-white">{coin.symbol.toUpperCase()}</h1>
                 <p className="text-xs text-text-muted">{coin.symbol.toUpperCase()}</p>
@@ -205,7 +207,7 @@ export default async function CoinDetailPage({ params }: Props) {
               </div>
             </div>
 
-            {session?.user ? (
+            {sessionData?.user ? (
               <div className="space-y-3">
                 <Link
                   href="/trading"

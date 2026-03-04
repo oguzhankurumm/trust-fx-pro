@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cache } from "@/lib/cache";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
-const BINANCE_BASE = "https://api.binance.com/api/v3";
-const CACHE_TTL = 5; // 5 seconds — real-time data
+const CACHE_TTL = 30; // 30 seconds — CoinGecko rate limits are stricter than Binance
 
 export interface TickerData {
   symbol: string;
@@ -17,43 +16,61 @@ export interface TickerData {
   quoteVolume: number;
 }
 
-// Maps our coin symbols to Binance TRY pair symbols
-const SYMBOL_MAP: Record<string, string> = {
-  BTC:  "BTCTRY",
-  ETH:  "ETHTRY",
-  BNB:  "BNBTRY",
-  LTC:  "LTCTRY",
-  DOT:  "DOTTRY",
-  AVAX: "AVAXTRY",
-  NEAR: "NEARTRY",
-  SOL:  "SOLTRY",
-  XRP:  "XRPTRY",
-  ADA:  "ADATRY",
+// Maps coin symbol to CoinGecko ID
+const SYMBOL_TO_ID: Record<string, string> = {
+  BTC:  "bitcoin",
+  ETH:  "ethereum",
+  BNB:  "binancecoin",
+  LTC:  "litecoin",
+  DOT:  "polkadot",
+  AVAX: "avalanche-2",
+  NEAR: "near",
+  SOL:  "solana",
+  XRP:  "ripple",
+  ADA:  "cardano",
 };
 
-function parseTicker(raw: {
+interface CoinGeckoMarket {
+  id: string;
   symbol: string;
-  lastPrice: string;
-  openPrice: string;
-  highPrice: string;
-  lowPrice: string;
-  volume: string;
-  quoteVolume: string;
-}): TickerData {
-  const last = parseFloat(raw.lastPrice);
-  const open = parseFloat(raw.openPrice);
-  return {
-    symbol: raw.symbol,
-    lastPrice: last,
-    openPrice: open,
-    highPrice: parseFloat(raw.highPrice),
-    lowPrice: parseFloat(raw.lowPrice),
-    priceChange: last - open,
-    priceChangePercent: open > 0 ? ((last - open) / open) * 100 : 0,
-    volume: parseFloat(raw.volume),
-    quoteVolume: parseFloat(raw.quoteVolume),
-  };
+  current_price: number;
+  high_24h: number;
+  low_24h: number;
+  price_change_24h: number;
+  price_change_percentage_24h: number;
+  total_volume: number;
 }
+
+function buildCgUrl(ids: string[]): string {
+  const base = process.env.COINGECKO_API_KEY && process.env.COINGECKO_API_TYPE === "pro"
+    ? "https://pro-api.coingecko.com/api/v3"
+    : "https://api.coingecko.com/api/v3";
+
+  const url = new URL(`${base}/coins/markets`);
+  url.searchParams.set("vs_currency", "try");
+  url.searchParams.set("ids", ids.join(","));
+  url.searchParams.set("order", "market_cap_desc");
+  url.searchParams.set("per_page", String(ids.length));
+  url.searchParams.set("page", "1");
+  url.searchParams.set("sparkline", "false");
+  url.searchParams.set("price_change_percentage", "24h");
+
+  const apiKey = process.env.COINGECKO_API_KEY;
+  if (apiKey) {
+    if (process.env.COINGECKO_API_TYPE === "pro") {
+      // Pro key goes in header, handled below
+    } else {
+      url.searchParams.set("x_cg_demo_api_key", apiKey);
+    }
+  }
+
+  return url.toString();
+}
+
+// Reverse lookup: CoinGecko ID → symbol
+const ID_TO_SYMBOL: Record<string, string> = Object.fromEntries(
+  Object.entries(SYMBOL_TO_ID).map(([sym, id]) => [id, sym])
+);
 
 export async function GET(req: NextRequest) {
   const ip = getClientIp(req);
@@ -66,50 +83,56 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = req.nextUrl;
-  // Accept comma-separated symbols like ?symbols=BTC,ETH,BNB
   const rawSymbols = searchParams.get("symbols") ?? "BTC,ETH,BNB,LTC,DOT,AVAX,NEAR";
   const requested = rawSymbols.split(",").map((s) => s.trim().toUpperCase());
 
-  // Map to Binance symbols, skip unknowns
-  const binanceSymbols = requested
-    .map((s) => SYMBOL_MAP[s])
-    .filter(Boolean) as string[];
-
-  if (binanceSymbols.length === 0) {
+  const validSymbols = requested.filter((s) => SYMBOL_TO_ID[s]);
+  if (validSymbols.length === 0) {
     return NextResponse.json({ success: false, error: "Geçersiz sembol(ler)." }, { status: 400 });
   }
 
-  const cacheKey = `ticker:${binanceSymbols.sort().join(",")}`;
+  const coinIds = validSymbols.map((s) => SYMBOL_TO_ID[s]);
+  const cacheKey = `ticker:cg:${[...validSymbols].sort().join(",")}`;
   const cached = cache.get<TickerData[]>(cacheKey);
   if (cached) {
     return NextResponse.json({ success: true, data: cached, cached: true });
   }
 
   try {
-    const encoded = encodeURIComponent(JSON.stringify(binanceSymbols));
-    const res = await fetch(
-      `${BINANCE_BASE}/ticker/24hr?symbols=${encoded}&type=MINI`,
-      { cache: "no-store" }
-    );
+    const url = buildCgUrl(coinIds);
+    const headers: HeadersInit = { Accept: "application/json" };
+    if (process.env.COINGECKO_API_KEY && process.env.COINGECKO_API_TYPE === "pro") {
+      headers["x-cg-pro-api-key"] = process.env.COINGECKO_API_KEY;
+    }
+
+    const res = await fetch(url, { headers, cache: "no-store" });
 
     if (!res.ok) {
       const text = await res.text();
-      throw new Error(`Binance API hatası: ${res.status} — ${text.slice(0, 100)}`);
+      throw new Error(`CoinGecko API hatası: ${res.status} — ${text.slice(0, 120)}`);
     }
 
-    const rawList = await res.json() as Array<{
-      symbol: string;
-      openPrice: string;
-      highPrice: string;
-      lowPrice: string;
-      lastPrice: string;
-      volume: string;
-      quoteVolume: string;
-    }>;
+    const markets = (await res.json()) as CoinGeckoMarket[];
 
-    const data = rawList.map(parseTicker);
+    const data: TickerData[] = markets.map((m) => {
+      const symbol = (ID_TO_SYMBOL[m.id] ?? m.symbol.toUpperCase()) + "TRY";
+      const last = m.current_price ?? 0;
+      const change = m.price_change_24h ?? 0;
+      const open = last - change;
+      return {
+        symbol,
+        lastPrice: last,
+        openPrice: open,
+        highPrice: m.high_24h ?? last,
+        lowPrice: m.low_24h ?? last,
+        priceChange: change,
+        priceChangePercent: m.price_change_percentage_24h ?? 0,
+        volume: m.total_volume ?? 0,
+        quoteVolume: 0,
+      };
+    });
+
     cache.set(cacheKey, data, CACHE_TTL);
-
     return NextResponse.json({ success: true, data, cached: false });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Bilinmeyen hata";

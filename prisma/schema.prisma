@@ -25,6 +25,18 @@ enum LedgerType {
   ADJUSTMENT  // admin manual adjustment (always APPROVED)
   DEPOSIT     // user deposit request
   WITHDRAWAL  // user withdrawal request
+  TRADE       // crypto binary-option trade (bet deduction or win payout)
+}
+
+enum TradeDirection {
+  UP
+  DOWN
+}
+
+enum TradeResult {
+  PENDING
+  WIN
+  LOSS
 }
 
 enum LedgerStatus {
@@ -58,6 +70,7 @@ model User {
   // Relations
   profile        Profile?
   ledgerEntries  LedgerEntry[]
+  cryptoTrades   CryptoTrade[]
   adminActions   AdminAudit[]   @relation("AdminActions")
   targetAudits   AdminAudit[]   @relation("TargetUser")
   bankAccounts   BankAccount[]  @relation("AdminBankAccounts")
@@ -114,6 +127,35 @@ model AdminAudit {
   @@index([adminId])
   @@index([targetUserId])
   @@map("admin_audits")
+}
+
+// ─── Crypto Trade Model ───────────────────────────────────────────────────────
+
+/// Binary-option style crypto trades. Each trade deducts betAmount immediately;
+/// a WIN creates a positive TRADE ledger entry equal to betAmount * WIN_MULTIPLIER.
+model CryptoTrade {
+  id          String         @id @default(cuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  symbol      String         // e.g. "BTC", "ETH"
+  direction   TradeDirection
+  /// Price at trade entry (TRY)
+  entryPrice  Decimal        @db.Decimal(18, 6)
+  /// Price at trade resolution (TRY); null while PENDING
+  exitPrice   Decimal?       @db.Decimal(18, 6)
+  /// Amount the user bet (TRY)
+  betAmount   Decimal        @db.Decimal(18, 2)
+  /// Net payout on WIN (betAmount * multiplier); null on LOSS
+  payout      Decimal?       @db.Decimal(18, 2)
+  /// Duration in seconds chosen by user
+  duration    Int
+  result      TradeResult    @default(PENDING)
+  resolvedAt  DateTime?
+  createdAt   DateTime       @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([result])
+  @@map("crypto_trades")
 }
 
 // ─── Bank Account Model ───────────────────────────────────────────────────────

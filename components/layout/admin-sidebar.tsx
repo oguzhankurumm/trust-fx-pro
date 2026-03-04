@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Settings, TrendingUp, LogOut, Shield, Building2, Wallet } from "lucide-react";
+import { LayoutDashboard, Users, Settings, TrendingUp, LogOut, Shield, Building2, Wallet, BarChart2 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,7 @@ const adminNavItems = [
   { href: "/admin", label: "Genel Bakış", icon: LayoutDashboard, exact: true },
   { href: "/admin/kullanicilar", label: "Kullanıcılar", icon: Users },
   { href: "/admin/islemler", label: "Finansal İşlemler", icon: Wallet },
+  { href: "/admin/trading", label: "Trading İşlemleri", icon: BarChart2 },
   { href: "/admin/banka-hesaplari", label: "Banka Hesapları", icon: Building2 },
   { href: "/admin/ayarlar", label: "Ayarlar", icon: Settings },
 ];
