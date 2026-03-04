@@ -1,0 +1,157 @@
+// TrustFX Pro — Prisma Schema
+// Compatible with PostgreSQL 14+ (Neon, Supabase, Render, Docker)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+}
+
+enum LedgerType {
+  ADJUSTMENT  // admin manual adjustment (always APPROVED)
+  DEPOSIT     // user deposit request
+  WITHDRAWAL  // user withdrawal request
+}
+
+enum LedgerStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum Currency {
+  TRY
+  USDT
+}
+
+// ─── Core Models ──────────────────────────────────────────────────────────────
+
+model User {
+  id            String     @id @default(cuid())
+  // NextAuth required fields
+  name          String?
+  email         String     @unique
+  emailVerified DateTime?
+  image         String?
+  // TrustFX custom fields
+  passwordHash  String?    // null for OAuth-only users
+  role          Role       @default(USER)
+  status        UserStatus @default(ACTIVE)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  // Relations
+  profile       Profile?
+  ledgerEntries LedgerEntry[]
+  adminActions  AdminAudit[]  @relation("AdminActions")
+  targetAudits  AdminAudit[]  @relation("TargetUser")
+  // NextAuth adapter relations
+  accounts      Account[]
+  sessions      Session[]
+
+  @@map("users")
+}
+
+model Profile {
+  id     String  @id @default(cuid())
+  userId String  @unique
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name   String?
+  phone  String?
+
+  @@map("profiles")
+}
+
+/// Immutable ledger — never delete or mutate rows; only add new ones.
+/// Balance is derived: SUM(amount) WHERE status = APPROVED
+model LedgerEntry {
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      LedgerType
+  /// Positive = credit, Negative = debit
+  amount    Decimal      @db.Decimal(18, 2)
+  currency  Currency     @default(TRY)
+  status    LedgerStatus @default(PENDING)
+  /// Free-form JSON: { note, txHash, adminReason, ... }
+  metadata  Json?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([userId, status])
+  @@index([userId, createdAt])
+  @@map("ledger_entries")
+}
+
+/// Immutable audit trail — one row per admin action, never edited.
+model AdminAudit {
+  id           String   @id @default(cuid())
+  adminId      String
+  admin        User     @relation("AdminActions", fields: [adminId], references: [id])
+  actionType   String   // e.g. BALANCE_ADJUST, APPROVE_DEPOSIT, BLOCK_USER …
+  targetUserId String?
+  targetUser   User?    @relation("TargetUser", fields: [targetUserId], references: [id])
+  /// Full payload snapshot for forensics
+  payload      Json
+  createdAt    DateTime @default(now())
+
+  @@index([adminId])
+  @@index([targetUserId])
+  @@map("admin_audits")
+}
+
+// ─── NextAuth Prisma Adapter Models ──────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
