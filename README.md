@@ -85,10 +85,7 @@ npm run prisma:push       # Şemayı uygula
 npm run prisma:seed       # Demo verilerini ekle
 ```
 
-Seed sonrası test hesapları:
-
-- **Admin**: `admin@trustfx.pro` / `Admin123!`
-- **Kullanıcı**: `kullanici@trustfx.pro` / `User123!`
+Seed sonrası admin ve kullanıcı test hesapları oluşturulur; detaylar `prisma/seed.ts` içinde tanımlıdır.
 
 ### 5. Geliştirme Sunucusunu Başlatın
 
