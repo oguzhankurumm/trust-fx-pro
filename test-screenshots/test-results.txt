@@ -1,0 +1,15 @@
+
+=== STEP 1: Login as Admin ===
+Navigating to login page...
+📸 Screenshot saved: 01-login-page.png
+Filling login form...
+📸 Screenshot saved: 02-login-form-filled.png
+Clicking login button...
+
+❌ ERROR: TimeoutError: page.waitForURL: Timeout 10000ms exceeded.
+=========================== logs ===========================
+waiting for navigation until "load"
+  navigated to "http://localhost:3000/giris?error=Configuration"
+  navigated to "http://localhost:3000/giris?error=Configuration"
+============================================================
+📸 Screenshot saved: 03-error-state.png

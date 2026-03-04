@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,16 +39,14 @@ function roleLabel(role?: string) {
 export default function ProfilPage() {
   const { data: session, update } = useSession();
 
-  const [name, setName] = useState("");
-
-  // Sync name from session once loaded (useSession resolves async)
-  useEffect(() => {
-    if (session?.user?.name) setName(session.user.name);
-  }, [session?.user?.name]);
+  // undefined = user hasn't typed yet → fall back to session value
+  const [name, setName] = useState<string | undefined>(undefined);
+  const sessionName = session?.user?.name ?? "";
+  const displayName = name !== undefined ? name : sessionName;
 
   const nameMutation = useMutation({
     mutationFn: updateName,
-    onSuccess: async () => { await update({ name }); },
+    onSuccess: async () => { await update({ name: displayName }); },
   });
 
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
@@ -60,7 +58,7 @@ export default function ProfilPage() {
 
   function handleNameSubmit(e: React.FormEvent) {
     e.preventDefault();
-    nameMutation.mutate(name);
+    nameMutation.mutate(displayName);
   }
 
   function handlePwSubmit(e: React.FormEvent) {
@@ -110,7 +108,7 @@ export default function ProfilPage() {
               <Label htmlFor="display-name">Görünen İsim</Label>
               <Input
                 id="display-name"
-                value={name}
+                value={displayName}
                 onChange={(e) => { setName(e.target.value); nameMutation.reset(); }}
                 placeholder="Adınız Soyadınız"
               />
